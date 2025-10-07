@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"  # 只开放 HTTP
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - proxy_net
+
+  fluent-bit:
+    image: fluent/fluent-bit:2.2
+    container_name: fluent-bit
+    depends_on:
+      - mysql
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./logs/nginx:/var/log/nginx:ro
+    networks:
+      - proxy_net
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: nginx_logs
+      MYSQL_USER: nginx
+      MYSQL_PASSWORD: nginxpass
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    driver: bridge
